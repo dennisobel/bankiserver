@@ -7,6 +7,7 @@ let {passCodeController} = require('../controllers/userController');
 let {loginController} = require('../controllers/userController');
 let {logoutController} = require('../controllers/userController');
 let {balanceEnquiry} = require('../controllers/userController')
+let {getUserController} = require('../controllers/userController')
 let requireAuth = passport.authenticate('jwt', {session: false});
 let requireLogin = passport.authenticate('local', {session: false});
 
@@ -17,7 +18,7 @@ let appRouter = (app)=>{
     app.post('/passcode',passCodeController.post)
     app.post('/login',loginController.post)
     app.get('/logout',logoutController.get)
-    app.post('/getuser',userController.get)
+    app.get('/getuser',getUserController.get)
     app.get('/protected', requireAuth, (req,res)=>{
         res.send({content:'Success'})
     });

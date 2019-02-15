@@ -7,6 +7,7 @@ let bcrypt = require('bcrypt');
 var jwt = require('jsonwebtoken'); 
 
 const userController = {};
+const getUserController = {};
 const verifyUserController = {};
 const passCodeController = {};
 const loginController = {};
@@ -31,7 +32,7 @@ setUserInfo = (request) => {
 }
  
 userController.post = (req,res,next) => {
-    console.log("here come session:",req.session)
+    // console.log("here come session:",req.session)
     const {
         idnumber,
         membernumber,
@@ -101,9 +102,10 @@ userController.post = (req,res,next) => {
     })
 }
 
-userController.get = (req,res) => {
+getUserController.get = (req,res) => {
+    console.log(req.body)
     db.UserSchema
-        .find({})
+        .find({membernumber:43307})
         .then((users)=>{
             return res.status(200).json({
                 success: true,
@@ -233,6 +235,7 @@ balanceEnquiry.post = (req,res) => {
 // export default userController
 module.exports = {
     userController,
+    getUserController,
     verifyUserController,
     passCodeController,
     loginController,

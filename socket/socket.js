@@ -1,4 +1,8 @@
 let helper = require('./../Helpers')
+let mpesa = require('../mpesa')
+var moment = require('moment');
+let ApiHelpers = require('../mpesa/ApiHelpers')
+
 /*
 let net = require('net')
 let HOST = '10.133.17.171'
@@ -91,11 +95,16 @@ module.exports = (io,clients) => {
 
         // Enquiries
         socket.on("balanceEnq",(data)=>{
-            console.log("We hit balanceenq. Here the data: ", data)
-            let balanceEnqStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${parseInt(data.membernumber)},TRANSACTION.CODE:EQ=BAL`            
+            console.log("BAL DATA", data)
+            // console.log("We hit balanceenq. Here the data: ", data)
+            let memberNo = 43307  
+            // let memberNo = parseInt(data.membernumber)  
+            let balanceEnqStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=BAL`            
             /*helper.T24Request(String(balanceEnqStr))*/
             T24Request(String(balanceEnqStr))
             .then((data)=>{
+
+                console.log("BAL ENQ DATA:",data.toString('utf-8'))
                 
                 // Process data to neat json before sending to client
                 let dataArray = data.toString('utf-8').split(",",-3)
@@ -121,47 +130,56 @@ module.exports = (io,clients) => {
             console.log("Balance Enquiries: ", data)
         })  
         
-        socket.on('estatement',(data)=>{
-            console.log("inside e-statement")
-            console.log("ESTAT INCOMING: ", data)
-            
-            let estatStr = `ENQUIRY.SELECT,,MBK/********/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${parseInt(data.data.membernumber)},TRANSACTION.CODE:EQ=EST`
-            
-            T24Request(String(estatStr))
-            .then((data)=>{
-                let dataArray = data.toString('utf-8').split(",",-3)
-                console.log(dataArray[4].split('.'))
-                // [4].split('.')
-                socket.emit('eStatementData',{data:dataArray[4].split('.')[0]})
-            })
-        })
-        
         // Loans
         // Get Loan Bal
-        socket.on('getLoanBal',(data)=>{
-            let loanBalEnqStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${parseInt(data.membernumber)},TRANSACTION.CODE:EQ=LBAL`
-            helper.T24Request(String(loanBalEnqStr))
-            console.log("getting loan balance.")
-        })
-
-        // Loan Eligibility
-        socket.on('loanEligibility',(data)=>{
-            let loanEligStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${parseInt(data.membernumber)},TRANSACTION.CODE:EQ=LAE`
-            helper.T24Request(String(loanEligStr))
-        })
+        // socket.on('getLoanBal',(data)=>{
+        //     let loanBalEnqStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${parseInt(data.membernumber)},TRANSACTION.CODE:EQ=LBAL`
+        //     helper.T24Request(String(loanBalEnqStr))
+        //     console.log("getting loan balance.")
+        // })
 
         // Apply Loan
         socket.on('applyMLoan',(data)=>{
-            console.log(data)
-        })
+            // let memberNo = data.membernumber 
+            let memberNo = 40256
+            // let memberNo = 43307
+            console.log("INCOMING MLOAN DATA: ",data)
+            let mloanStr = `FUNDS.TRANSFER,KBS.MLOAN/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${memberNo},DEBIT.AMOUNT=${data.amount},MLOAN.TYPE=30`
 
-        socket.on('applyExpressLoan',(data)=>{
-            console.log(data)
+            T24Request(String(mloanStr)).then(data=>{
+                let firstElOfSplitStr = data.toString('utf-8').split(',')[0]
+                  
+                let lastElOfAboveArray = firstElOfSplitStr.split('/').slice(-1)[0]  
+
+                console.log("M-LOAN DATA: ",data.toString('utf-8').split(',')[0].split('/').slice(-1)[0])
+
+                if(lastElOfAboveArray == '1'){
+                    socket.emit('applyMLoanResult',{data:`Your M-LOAN request of Ksh ${parseInt(data.data)} will be disbursed shortly.`})
+                }else if(lastElOfAboveArray == 'NO'){
+                    socket.emit('applyMLoanResult',{data:"Sorry, you do not qualify for M-LOAN"})
+                }                  
+            })
         })
 
         socket.on('applyFosaAdvance',(data)=>{
-            let fosaAdvStr = `FUNDS.TRANSFER,KBS.MB.FOSA.ADVANCE/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=38213,DEBIT.AMOUNT=10000.0`
-            helper.T24Request(String(fosaAdvStr))
+            // let memberNo = data.membernumber
+            // let memberNo = 40256            
+            let memberNo = 43307   
+            console.log("INCOMING FOSA DATA: ",data)
+            let fosaAdvStr = `FUNDS.TRANSFER,KBS.MB.FOSA.ADVANCE/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${memberNo},DEBIT.AMOUNT=${data.amount}`
+            T24Request(String(fosaAdvStr)).then(data=>{
+                let firstElOfSplitStr = data.toString('utf-8').split(',')[0]
+                  
+                let lastElOfAboveArray = firstElOfSplitStr.split('/').slice(-1)[0]     
+
+                console.log("FOSA DATA: ",data.toString('utf-8').split(',')[0].split('/').slice(-1)[0])
+
+                if(lastElOfAboveArray == '1'){
+                    socket.emit('applyFosaAdvanceResult',{data:`Your FOSA Advance request of Ksh ${parseInt(data.data)} will be disbursed shortly.`})
+                }else if(lastElOfAboveArray == 'NO'){
+                    socket.emit('applyFosaAdvanceResult',{data:"Sorry, you do not qualify for FOSA Advance"})
+                }                  
+            })
         })     
 
         // Pay Loan
@@ -176,10 +194,85 @@ module.exports = (io,clients) => {
             makePayment(data)
         })
 
-        // Guarantees Guarantors
-        socket.on('guaranteesGuarantors',()=>{
-            console.log("fetch guarantors")
+        socket.on('estatement',(data)=>{
+            // let memberNo = ${parseInt(data.membernumber)}
+            // let memberNo = 30469                          
+            let memberNo = 43307  
+            console.log("inside e-statement")
+            console.log("ESTAT INCOMING: ", data)
+            
+            let estatStr = `ENQUIRY.SELECT,,MBK/********/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=EST`
+            
+            T24Request(String(estatStr))
+            .then((data)=>{
+                let dataArray = data.toString('utf-8').split(",",-3)
+                console.log(dataArray[4].split('.'))
+                // [4].split('.')
+                socket.emit('eStatementData',{data:dataArray[4].split('.')[0]})
+            })
         })
+
+        // accounts
+
+        // Guarantee = TEE
+        // Guarantor
+
+        socket.on('memberAccounts',(data)=>{
+            // let memberNo = parseInt(data.membernumber)
+            // let memberNo = 30469            
+            let memberNo = 43307
+            let memAccStr = `CUSTOMER_POSITION=ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=CSP `   
+
+            T24Request(String(memAccStr))
+            .then((data)=>{
+                console.log(data.toString('utf-8'))
+
+                if(data.toString('utf-8') == '0023EB.RTN.APP.MISS.2|01|$$'){
+                    socket.emit('memberAccountsResponse',{data:"No Accounts Found"})
+                }
+                // let dataArray = data.toString('utf-8').split(",",-3)
+            })             
+        })
+
+        // Guarantees Guarantors
+        socket.on('guarantors',(data)=>{
+            console.log("inside Guarantors")
+            console.log("Guarantors INCOMING: ", data)
+
+            // let memberNo = ${parseInt(data.membernumber)}
+            // let memberNo = 30469     
+            let memberNo = 43307         
+            
+            let guarantorStr = `LIST_GUARANTORS=ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=TOR`
+            
+            T24Request(String(guarantorStr))
+            .then((data)=>{
+                console.log(data.toString('utf-8'))
+                let dataArray = data.toString('utf-8').split(",",-3)
+                // console.log(dataArray[4].split('.'))
+                // [4].split('.')
+                // socket.emit('eStatementData',{data:dataArray[4].split('.')[0]})
+            })            
+        })
+
+        socket.on('guarantees',(data)=>{
+            // let memberNo = ${parseInt(data.membernumber)}
+            // let memberNo = 30469        
+            let memberNo = 43307          
+            console.log("inside Guarantors")
+            console.log("Guarantees INCOMING: ", data)
+            
+            let guaranteeStr = `LIST_GUARANTEES=ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=TEE`
+            
+            T24Request(String(guaranteeStr))
+            .then((data)=>{
+                console.log(data.toString('utf-8'))
+                let dataArray = data.toString('utf-8').split(",",-3)
+                // console.log(dataArray[4].split('.'))
+                // [4].split('.')
+                // socket.emit('eStatementData',{data:dataArray[4].split('.')[0]})
+            })             
+        })        
 
         // Funds Transfer
         // account balances
@@ -204,7 +297,9 @@ module.exports = (io,clients) => {
             console.log(data)
             // ${parseInt(data.membernumber)}
             // 30469
-            let airtimePurchStr = `FUNDS.TRANSFER,KBS.AIRTIME/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${parseInt(data.membernumber)},DEBIT.AMOUNT=${parseInt(data.data)}`
+            let memberNo = 43307      
+            // let memberNo = parseInt(data.membernumber)
+            let airtimePurchStr = `FUNDS.TRANSFER,KBS.AIRTIME/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${memberNo},DEBIT.AMOUNT=${parseInt(data.data)}`
 
             T24Request(String(airtimePurchStr))
             .then((data)=>{
@@ -221,11 +316,40 @@ module.exports = (io,clients) => {
             })
         })
 
+        socket.on('kopaAirtime',data=>{
+            console.log("KOPA CREDO DATA:",data)
+
+            // let memberNO = parseInt(data.membernumber)
+            // let memberNO = 30469         
+            let memberNO = 43307   
+            console.log(memberNO)   
+
+            let kopaAirtimeStr = `KOPA_CREDIT=FUNDS.TRANSFER,KBS.KOPA.CREDIT/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${memberNO},DEBIT.AMOUNT=${parseInt(data.data)}`
+
+            T24Request(String(kopaAirtimeStr))
+            .then((data)=>{
+
+                console.log(data.toString('utf-8'))
+
+                // let firstElOfSplitStr = data.toString('utf-8').split(',')[0]
+                  
+                // let lastElOfAboveArray = firstElOfSplitStr.split('/').slice(-1)[0]     
+                
+                // if(lastElOfAboveArray == '1'){
+                //     socket.emit('tokenPurchaseData',{data:`You have received Airtime worth Ksh ${parseInt(data.data)}`})
+                // }else if(lastElOfAboveArray == 'NO'){
+                //     socket.emit('tokenPurchaseData',{data:"Sorry, you have insufficient funds. Please top your account up"})
+                // }  
+            })            
+        })
+
         socket.on('tokenPurchase',(data)=>{
-            console.log(data)
+            console.log("TOKEN PURCHASE DATA:",data)
             // ${parseInt(data.membernumber)}
             // 40256
-            let tokenPurchStr = `FUNDS.TRANSFER,KBS.ELECT/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${parseInt(data.membernumber)},DEBIT.AMOUNT=${parseInt(data.data)}`
+            let memberNO = 43307
+            // let memberNO = parseInt(data.membernumber)        
+            let tokenPurchStr = `FUNDS.TRANSFER,KBS.ELECT/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${memberNO},DEBIT.AMOUNT=${parseInt(data.data)}`
             // helper.T24Request(String(tokenPurchStr))
 
             T24Request(String(tokenPurchStr))
@@ -243,8 +367,84 @@ module.exports = (io,clients) => {
             })
         })
 
+        socket.on('loanEligibility',(data)=>{
+            console.log("INCOMING LOAN ELIG DATA: ",data)
+            // let memberNo = parseInt(data.membernumber)
+            let memberNo = 43307
+            // let tokenPurchStr = `FUNDS.TRANSFER,KBS.ELECT/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${parseInt(data.membernumber)},DEBIT.AMOUNT=${parseInt(data.data)}`
+            let loanEligibilityStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${43307},TRANSACTION.CODE:EQ=LAE`
+
+            T24Request(String(loanEligibilityStr))
+            .then(data=>{
+                let stringifiedData = data.toString('utf-8')
+                // console.log("HERE COME LOAN ELIGIBILITY DATA:",stringifiedData.split(':')[5].split('.'))
+
+                let mappedRes = stringifiedData.split(':')[5].split('.').map((el)=>{
+                    return el.slice(3)
+                })
+
+                console.log("MAPPED RES: ", mappedRes)
+
+                socket.emit('loanEligibilityResult',mappedRes)
+            })
+        })
+
+        socket.on('loanBalances',(data)=>{
+
+            console.log("inside lonaBalances")
+            console.log("INCOMING LOAN BAL DATA: ",data)
+            // let memberNo = 40256
+            // let memberNo = parseInt(data.membernumber)
+            let memberNo = 43307
+            let loanBalStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=LBAL`
+
+            T24Request(String(loanBalStr))
+            .then(data=>{
+                let stringifiedData = data.toString('utf-8')
+                console.log("HERE COME LOAN BAL DATA:",stringifiedData.split(':')[4].split(',')[2])
+
+                let loanBalanceResult = stringifiedData.split(':')[4].split(',')[2]
+
+                if(stringifiedData.split(':')[4].split(',')[2] !== undefined){
+                    socket.emit('loanBalanceResult',{data:loanBalanceResult})
+                }else if(stringifiedData.split(':')[4].split(',')[2] == undefined){
+                    socket.emit('loanBalanceResult',{data:"Yo do not have any loan balances"})
+                }
+            })
+        })        
+
+        socket.on('depositFromMpesa',data=>{
+            // console.log("DEPOSIT MPESA DATA",data)
+            // mpesa.handleMpesa(data)
+            console.log("inside depositfrommpesa")
+
+            ApiHelpers.genOAuth().then(body => {  
+                console.log("inside genOauth")
+                let _body = JSON.parse(body);
+                let oauth_token = _body.access_token;
+                let auth = "Bearer " + oauth_token;
+        
+                console.log("auth:",auth)
+
+                ApiHelpers.lipaNaMpesa(auth).then(body => { 
+                    console.log("inside lipanampesa")           
+                    console.log("Body :",body)
+                }).catch(error => {
+                    console.log("Error :",error)
+                })                
+            })            
+        })
+
         socket.on('disconnect',()=>{
 
         })        
     })
 }
+
+// BUY TO ANOTHER NUMBER
+// MINI, FULL STATEMENT
+// ENCRYPTION
+// MISSING OFSs
+// INTERCEPTION OF TEXTS
+// TIMEOUT LOCK AND PIN BEFORE TRANSACTION
+// SMS FOR ALL TRANSACTIONS

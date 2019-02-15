@@ -11,6 +11,7 @@
   "dependencies": {
     "@types/node": "^10.5.8",
     "axios": "^0.18.0",
+    "base-64": "^0.1.0",
     "bcrypt": "^3.0.0",
     "bcrypt-nodejs": "0.0.3",
     "body-parser": "^1.18.3",
@@ -20,6 +21,7 @@
     "express-handlebars": "^3.0.0",
     "express-session": "^1.15.6",
     "jsonwebtoken": "^8.3.0",
+    "logger": "0.0.1",
     "moment": "^2.22.2",
     "mongoose": "^5.2.7",
     "morgan": "^1.9.0",
@@ -30,6 +32,7 @@
     "passport-local": "^1.0.0",
     "python-shell": "^0.5.0",
     "request": "^2.88.0",
+    "request-promise": "^4.2.2",
     "rxjs": "^5.5.2",
     "sequelize": "^3.30.1",
     "socket.io": "^2.1.1"

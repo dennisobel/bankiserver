@@ -5,7 +5,6 @@ var OTP = Math.floor(Math.random() * 10000) + 9999
 // require('./generateOtp')
 
 
-
 // Your login credentials
 var username = 'digitalnative';
 var apikey   = '9734d411d44457624c8eb6ec8ecfac522866b6d0e1da5cb32f359621e7cbc19a';
