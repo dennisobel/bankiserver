@@ -12,6 +12,7 @@ const verifyUserController = {};
 const passCodeController = {};
 const loginController = {};
 const logoutController = {};
+const uploadImage = {};
 
 const balanceEnquiry = {};
 var authConfig = require('../config/auth');
@@ -141,6 +142,7 @@ passCodeController.post = (req,res) => {
     // hash password with bcrypt
     // gensalt    
     const saltRounds = 10;
+    
     bcrypt.genSalt(saltRounds)
         .then(salt => {
             return bcrypt.hash(req.body.passcode,salt)
@@ -165,6 +167,15 @@ passCodeController.post = (req,res) => {
                 })
         })
         
+        /*
+        bcrypt.hash(req.body.passcode,10,(err,hash)=>{
+            if(err){
+                throw Error;
+            }
+        })*/
+
+
+        
        db.UserSchema
        .findOneAndUpdate({
            idnumber:req.body.idnumber
@@ -184,7 +195,7 @@ passCodeController.post = (req,res) => {
 }
 
 loginController.post = (req,res) => {
-    console.log("Login Attempt",req.body)   
+    console.log("Inside Login Controller, Login Attempt",req.body)   
     let sess = req.session;
     sess.phonenumber = req.body.phonenumber
     
@@ -196,17 +207,19 @@ loginController.post = (req,res) => {
         if(docs){
             console.log("here come docs: ",docs)
             bcrypt.compare(req.body.passcode,docs.passcode,(err,response)=>{
-                if(err){
-                    throw new Error;
-                }else if(response){
-                    console.log("here come res:",response)
+                console.log("inside bcrypt:",req.body)
+                console.log("inside bcrypt, response",response)
+                if(response){
+                    console.log("server login response:",response)
                     
                     return res.status(200).json({
                         success: true,
                         data: docs
                     })  
                     
-                }
+                }else if(err){
+                    throw new Error;
+                } 
             })         
         }
     })
@@ -221,6 +234,24 @@ logoutController.get = (req,res) => {
                 success: true
             })              
         }
+    })
+}
+
+uploadImage.post = (req,res) => {
+    db.UserSchema
+    .findOneAndUpdate({
+        membernumber:req.body.membernumber
+    },{
+        image:req.body.image
+    })
+    .then(()=>{
+        db.UserSchema
+            .findOne({
+                membernumber:req.body.membernumber
+            })
+            .then((result)=>{
+                console.log(result)
+            })
     })
 }
 
@@ -240,5 +271,6 @@ module.exports = {
     passCodeController,
     loginController,
     logoutController,
-    balanceEnquiry
+    balanceEnquiry,
+    uploadImage
 }

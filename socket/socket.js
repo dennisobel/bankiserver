@@ -95,15 +95,19 @@ module.exports = (io,clients) => {
 
         // Enquiries
         socket.on("balanceEnq",(data)=>{
-            console.log("BAL DATA", data)
-            // console.log("We hit balanceenq. Here the data: ", data)
-            let memberNo = 43307  
-            // let memberNo = parseInt(data.membernumber)  
-            let balanceEnqStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=BAL`            
+            console.log("BAL DATA MEMBER NO", data)
+            let memberNo = data
+            let balanceEnqStr = `ENQUIRY.SELECT,,INPUTT/Le@ve123/KE0010001,KBS.APPL.GUARANT,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=BAL`
+            // let balanceEnqStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=BAL`            
             /*helper.T24Request(String(balanceEnqStr))*/
             T24Request(String(balanceEnqStr))
             .then((data)=>{
+                let stringifiedData = data.toString('utf-8')
+                
 
+                let dataArray = data.toString('utf-8').split(",",-3)
+                console.log("BAL ENQ DATA:",dataArray)
+                /*
                 console.log("BAL ENQ DATA:",data.toString('utf-8'))
                 
                 // Process data to neat json before sending to client
@@ -116,9 +120,25 @@ module.exports = (io,clients) => {
                 }).slice(0,2)
                 
                 // emit
-                socket.emit('balEnqData',{data:filteredAndMapped})
+                // socket.emit('balEnqData',{data:filteredAndMapped})
+                */
+                socket.emit('balEnqData',{data:dataArray})
             })
             
+        })
+
+        socket.on('transaction',(data) => {
+            console.log("INCOMING TRANSACTION DATA: ", data)
+            let str = `ENQUIRY.SELECT,,INPUTT/Le@ve123/KE0010001,KBS.APPL.GUARANT,CUSTOMER.NO:EQ=${data.mno},TRANSACTION.CODE:EQ=MIN,CREDIT.AC.NO:EQ=${data.accountNum}`
+            T24Request(String(str))
+            .then((data)=>{
+                let stringifiedData = data.toString('utf-8')
+                console.log('STRING DATA: ',stringifiedData)                
+
+                let dataArray = data.toString('utf-8').split(",",-3)
+                console.log("TRANSACTION ENQ DATA:",dataArray)
+                socket.emit('transactionData',{data:dataArray})
+            })            
         })
 
         
@@ -141,12 +161,14 @@ module.exports = (io,clients) => {
         // Apply Loan
         socket.on('applyMLoan',(data)=>{
             // let memberNo = data.membernumber 
-            let memberNo = 40256
+            // let memberNo = 40256
             // let memberNo = 43307
             console.log("INCOMING MLOAN DATA: ",data)
-            let mloanStr = `FUNDS.TRANSFER,KBS.MLOAN/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${memberNo},DEBIT.AMOUNT=${data.amount},MLOAN.TYPE=30`
+            let mloanStr = `FUNDS.TRANSFER,KBS.MLOAN/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${data.mno},DEBIT.AMOUNT=${data.amount},MLOAN.TYPE=30`
 
             T24Request(String(mloanStr)).then(data=>{
+                let stringifiedData = data.toString('utf-8');
+                /*
                 let firstElOfSplitStr = data.toString('utf-8').split(',')[0]
                   
                 let lastElOfAboveArray = firstElOfSplitStr.split('/').slice(-1)[0]  
@@ -157,17 +179,21 @@ module.exports = (io,clients) => {
                     socket.emit('applyMLoanResult',{data:`Your M-LOAN request of Ksh ${parseInt(data.data)} will be disbursed shortly.`})
                 }else if(lastElOfAboveArray == 'NO'){
                     socket.emit('applyMLoanResult',{data:"Sorry, you do not qualify for M-LOAN"})
-                }                  
+                }         
+                */
+               socket.emit('applyMLoanResult',stringifiedData)         
             })
         })
 
         socket.on('applyFosaAdvance',(data)=>{
             // let memberNo = data.membernumber
             // let memberNo = 40256            
-            let memberNo = 43307   
+            // let memberNo = data.mno
             console.log("INCOMING FOSA DATA: ",data)
-            let fosaAdvStr = `FUNDS.TRANSFER,KBS.MB.FOSA.ADVANCE/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${memberNo},DEBIT.AMOUNT=${data.amount}`
+            let fosaAdvStr = `FUNDS.TRANSFER,KBS.MB.FOSA.ADVANCE/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${data.mno},DEBIT.AMOUNT=${data.amount}`
             T24Request(String(fosaAdvStr)).then(data=>{
+                let stringifiedData = data.toString('utf-8');
+                /*
                 let firstElOfSplitStr = data.toString('utf-8').split(',')[0]
                   
                 let lastElOfAboveArray = firstElOfSplitStr.split('/').slice(-1)[0]     
@@ -178,9 +204,20 @@ module.exports = (io,clients) => {
                     socket.emit('applyFosaAdvanceResult',{data:`Your FOSA Advance request of Ksh ${parseInt(data.data)} will be disbursed shortly.`})
                 }else if(lastElOfAboveArray == 'NO'){
                     socket.emit('applyFosaAdvanceResult',{data:"Sorry, you do not qualify for FOSA Advance"})
-                }                  
+                }  
+                */
+               socket.emit('applyFosaAdvanceResult',stringifiedData)             
             })
-        })     
+        })   
+        
+        // Get Accounts
+        socket.on('memberAccounts',(data) => {
+            console.log('INCOMING MEMBER ACC REQUEST: ', data);
+            let accountsStr = `CUSTOMER_POSITION=ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${data},TRANSACTION.CODE:EQ=CSP `;
+            T24Request(String(accountsStr)).then((data) => {
+                console.log("MEMBER ACCOUNTS RESULTS: ", data.toString('utf-8'));
+            })
+        })
 
         // Pay Loan
         socket.on('payLoan',(_data)=>{
@@ -241,17 +278,22 @@ module.exports = (io,clients) => {
 
             // let memberNo = ${parseInt(data.membernumber)}
             // let memberNo = 30469     
-            let memberNo = 43307         
+            let memberNo = 43307  
+            // 29991    
+
+            let grtorStr = `ENQUIRY.SELECT,,INPUTT/Le@ve123/KE0010001,KBS.APPL.GUARANT,CUSTOMER.NO:EQ=${data},TRANSACTION.CODE:EQ=TOR`
             
-            let guarantorStr = `LIST_GUARANTORS=ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=TOR`
+            // let guarantorStr = `LIST_GUARANTORS=ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.APPL.GUARANT,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=TOR`
             
-            T24Request(String(guarantorStr))
+            T24Request(String(grtorStr))
             .then((data)=>{
+                let stringifiedData = data.toString('utf-8');
                 console.log(data.toString('utf-8'))
-                let dataArray = data.toString('utf-8').split(",",-3)
+                // let dataArray = data.toString('utf-8').split(",",-3)
                 // console.log(dataArray[4].split('.'))
                 // [4].split('.')
                 // socket.emit('eStatementData',{data:dataArray[4].split('.')[0]})
+                socket.emit('guarantorsResult',{data:stringifiedData})
             })            
         })
 
@@ -259,18 +301,21 @@ module.exports = (io,clients) => {
             // let memberNo = ${parseInt(data.membernumber)}
             // let memberNo = 30469        
             let memberNo = 43307          
-            console.log("inside Guarantors")
+            console.log("inside Guarantees")
             console.log("Guarantees INCOMING: ", data)
             
-            let guaranteeStr = `LIST_GUARANTEES=ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=TEE`
+            let grteeStr = `ENQUIRY.SELECT,,INPUTT/Le@ve123/KE0010001,KBS.APPL.GUARANT,CUSTOMER.NO:EQ=${data},TRANSACTION.CODE:EQ=TEE`
+            // let guaranteeStr = `LIST_GUARANTEES=ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.APPL.GUARANT,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=TEE`
             
-            T24Request(String(guaranteeStr))
+            T24Request(String(grteeStr))
             .then((data)=>{
+                let stringifiedData = data.toString('utf-8');
                 console.log(data.toString('utf-8'))
                 let dataArray = data.toString('utf-8').split(",",-3)
                 // console.log(dataArray[4].split('.'))
                 // [4].split('.')
                 // socket.emit('eStatementData',{data:dataArray[4].split('.')[0]})
+                socket.emit('guaranteesResult',{data:stringifiedData})
             })             
         })        
 
@@ -369,23 +414,24 @@ module.exports = (io,clients) => {
 
         socket.on('loanEligibility',(data)=>{
             console.log("INCOMING LOAN ELIG DATA: ",data)
-            // let memberNo = parseInt(data.membernumber)
-            let memberNo = 43307
-            // let tokenPurchStr = `FUNDS.TRANSFER,KBS.ELECT/I/PROCESS,MBK/123455/KE0010001,,MB.MEMBER.NO=${parseInt(data.membernumber)},DEBIT.AMOUNT=${parseInt(data.data)}`
-            let loanEligibilityStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${43307},TRANSACTION.CODE:EQ=LAE`
+            let memberNo = data
+            let loanEligibilityStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${data},TRANSACTION.CODE:EQ=LAE`
 
             T24Request(String(loanEligibilityStr))
             .then(data=>{
                 let stringifiedData = data.toString('utf-8')
-                // console.log("HERE COME LOAN ELIGIBILITY DATA:",stringifiedData.split(':')[5].split('.'))
+                /*
+                console.log("unfiltered eligibility data",stringifiedData)
+                console.log("HERE COME LOAN ELIGIBILITY DATA:",stringifiedData.split(':')[5].split('.'))
 
                 let mappedRes = stringifiedData.split(':')[5].split('.').map((el)=>{
                     return el.slice(3)
                 })
 
                 console.log("MAPPED RES: ", mappedRes)
+                */
 
-                socket.emit('loanEligibilityResult',mappedRes)
+                socket.emit('loanEligibilityResult',stringifiedData)
             })
         })
 
@@ -395,12 +441,14 @@ module.exports = (io,clients) => {
             console.log("INCOMING LOAN BAL DATA: ",data)
             // let memberNo = 40256
             // let memberNo = parseInt(data.membernumber)
-            let memberNo = 43307
+            let memberNo = data
             let loanBalStr = `ENQUIRY.SELECT,,MBK/123455/KE0010001,KBS.MB.PROC,CUSTOMER.NO:EQ=${memberNo},TRANSACTION.CODE:EQ=LBAL`
 
             T24Request(String(loanBalStr))
             .then(data=>{
                 let stringifiedData = data.toString('utf-8')
+                console.log("LOAN BAL RES: ",stringifiedData)
+                /*
                 console.log("HERE COME LOAN BAL DATA:",stringifiedData.split(':')[4].split(',')[2])
 
                 let loanBalanceResult = stringifiedData.split(':')[4].split(',')[2]
@@ -408,15 +456,17 @@ module.exports = (io,clients) => {
                 if(stringifiedData.split(':')[4].split(',')[2] !== undefined){
                     socket.emit('loanBalanceResult',{data:loanBalanceResult})
                 }else if(stringifiedData.split(':')[4].split(',')[2] == undefined){
-                    socket.emit('loanBalanceResult',{data:"Yo do not have any loan balances"})
+                    socket.emit('loanBalanceResult',{data:stringifiedData})
                 }
+                */
+               socket.emit('loanBalanceResult',{data:stringifiedData})
             })
         })        
 
         socket.on('depositFromMpesa',data=>{
-            // console.log("DEPOSIT MPESA DATA",data)
+            console.log("DEPOSIT MPESA DATA",data)
             // mpesa.handleMpesa(data)
-            console.log("inside depositfrommpesa")
+            console.log("inside depositfrommpesa. DATA: ", data)
 
             ApiHelpers.genOAuth().then(body => {  
                 console.log("inside genOauth")

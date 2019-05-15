@@ -6,26 +6,29 @@ mongoose.Promise = global.Promise;
 
 const userSchema = new Schema({
     idnumber:{
-        type: String,
-        required: true
+        type: String
     },
     membernumber:{
-        type: String,
-        required: true
+        type: Number
     },    
     phonenumber:{
         type: String,
-        unique: true,
-        required: true
+        unique: true
+    },
+    image:{
+        type: String
     },
     otp:{
-        type: String,
-        unique: true
+        type: String
     },
     passcode:{
         type:String
     },
     verified:{
+        type:Boolean,
+        default:false
+    },
+    verifyMno:{
         type:Boolean,
         default:false
     }     

@@ -33,6 +33,7 @@ exports.genOAuth = () => {
     return rp(
         {
             url:genoauthUrl,
+            "rejectUnauthorized": false,
             headers:{
                 "Authorization":auth
             }
@@ -49,6 +50,7 @@ exports.registerURL = (auth) => {
     return rp(
         {
             method:"POST",
+            "rejectUnauthorized": false,
             url:registerUrl,
             headers:{
                 "Authorization":auth
@@ -71,6 +73,7 @@ exports.simulateC2B = (auth) => {
     return rp(
         {
             method:"POST",
+            "rejectUnauthorized": false,
             url:c2bsimulateUrl,
             headers:{
                 "Authorization":auth
@@ -94,6 +97,7 @@ exports.accountBalance = (auth) => {
     return rp(
         {
             method:"POST",
+            "rejectUnauthorized": false,
             url:accountbalUrl,
             headers:{
                 "Authorization":auth
@@ -120,6 +124,7 @@ exports.transactionStatus = (auth) => {
     return rp(
         {
             method:"POST",
+            "rejectUnauthorized": false,
             url:transactionStatusUrl,
             headers:{
                 "Authorization":auth
@@ -148,6 +153,7 @@ exports.transactionReversal = (auth) => {
     return rp(
         {
             method:"POST",
+            "rejectUnauthorized": false,
             url:reversalUrl,
             headers:{
                 "Authorization":auth
@@ -178,6 +184,7 @@ exports.lipaNaMpesa = (auth) => {
     return rp(
         {
             method:"POST",
+            "rejectUnauthorized": false,
             url:lipaNaMpesaUrl,
             headers:{
                 "Authorization":auth
@@ -209,6 +216,7 @@ exports.lipaNaMpesaQuery = (auth) => {
     return rp(
         {
             method:"POST",
+            "rejectUnauthorized": false,
             url:lipaNaMpesaQueryUrl,
             headers:{
                 "Authorization":auth

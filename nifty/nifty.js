@@ -11,7 +11,7 @@ makePayment = function(_data){
    });
 
    var data = JSON.stringify([_data.phoneNumber,parseInt(_data.amount),'kbsacco','f861c6cc-4efa-4306-8eee-08f035b03772']);
-   console.log("data: ",data)
+   console.log("datas: ",data)
    // Write data (remember to send only strings or numbers, otherwhise python wont understand)
    scriptExecution.stdin.write(data);
    // End data write

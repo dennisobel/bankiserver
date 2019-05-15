@@ -1,5 +1,7 @@
 const UserSchema = require('../models/user');
+const ImageSchema = require('../models/image');
 
 module.exports = {
-    UserSchema
+    UserSchema,
+    ImageSchema
 }
