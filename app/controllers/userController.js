@@ -8,6 +8,7 @@ var jwt = require('jsonwebtoken');
 
 const userController = {};
 const getUserController = {};
+const singleUserController = {};
 const verifyUserController = {};
 const passCodeController = {};
 const loginController = {};
@@ -118,6 +119,23 @@ getUserController.get = (req,res) => {
                 message: err
             })
         })
+}
+
+singleUserController.get = (req,res) => {
+    db.UserSchema.findOne({
+        _id:req.params.id
+    })
+    .then((user) => {
+        return res.status(200).json({
+            success:true,
+            user:user
+        })
+    })
+    .catch((err) => {
+        return res.status(500).json({
+            message:err
+        })
+    })
 }
 
 verifyUserController.post = (req,res) => {
@@ -267,6 +285,7 @@ balanceEnquiry.post = (req,res) => {
 module.exports = {
     userController,
     getUserController,
+    singleUserController,
     verifyUserController,
     passCodeController,
     loginController,

@@ -155,7 +155,8 @@ phoneNumberController.post = (req,res,next) => {
                             res.status(200).json({
                                 success: true,
                                 memberExist: true,
-                                memberData: memberData
+                                memberData: memberData,
+                                docs:docs
                             }) 
                         )                        
                     } else {

@@ -7,6 +7,7 @@ let {passCodeController} = require('../controllers/userController');
 let {loginController} = require('../controllers/userController');
 let {logoutController} = require('../controllers/userController');
 let {balanceEnquiry} = require('../controllers/userController');
+let {singleUserController} = require('../controllers/userController');
 let {imageUpload} = require('../controllers/userController');
 
 let {phoneNumberController} = require('../controllers/signupController');
@@ -42,6 +43,7 @@ let appRouter = (app)=>{
     
     app.get('/logout',logoutController.get)
     app.get('/getuser',getUserController.get)
+    app.get('/singleUser/:id',singleUserController.get)
     app.get('/protected', requireAuth, (req,res)=>{
         res.send({content:'Success'})
     });

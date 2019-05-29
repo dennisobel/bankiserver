@@ -208,7 +208,18 @@ module.exports = (io,clients) => {
                 */
                socket.emit('applyFosaAdvanceResult',stringifiedData)             
             })
-        })   
+        }) 
+        
+        socket.on('loanApplication',(data) => {
+            console.log("INCOMING LOAN APPLICATION DATA:",data)
+            let str = `ENQUIRY.SELECT,,INPUTT/Le@ve123/KE0010001,KBS.LOAN.APPL.APP,CUSTOMER.NO:EQ=${data.memberNumber},PHONE.NO:EQ=${data.phoneNumber},LOAN.AMOUNT:EQ=${data.amount},LOAN.TERM:EQ=${data.term + 'M'},LOAN.TYPE:EQ=${data.type},LOAN.PURPOSE:EQ=${data.purpose},GUARANTORS:EQ=${data.guarantors.join(':')/*'29991:40304:30469:30155'*/}`
+            console.log("STR:",str)
+            T24Request(String(str)).then((data)=>{
+                let stringifiedData = data.toString('utf-8');
+                console.log("LOAN APPLICATION DATA FEEDBACK:",stringifiedData)
+                socket.emit('loanApplicationFeedback',stringifiedData)
+            })
+        })
         
         // Get Accounts
         socket.on('memberAccounts',(data) => {
