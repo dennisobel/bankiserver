@@ -22,7 +22,7 @@
     "express-handlebars": "^3.0.0",
     "express-session": "^1.15.6",
     "fs": "0.0.1-security",
-    "jsonwebtoken": "^8.3.0",
+    "jsonwebtoken": "^9.0.0",
     "logger": "0.0.1",
     "moment": "^2.22.2",
     "mongoose": "^5.2.7",
